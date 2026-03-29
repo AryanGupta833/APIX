@@ -25,7 +25,7 @@ public class CollectionService {
     private UserRepository userRepository;
 
     public Collection createCollection(String name){
-        String email=SecurityContextHolder.getContext().getAuthentication().getName();
+        String email=(String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user=userRepository.findByEmail(email).orElseThrow();
         Collection collection=new Collection();
         collection.setName(name);

@@ -25,7 +25,7 @@ public class HistoryService {
 
     public void savedHistory(String method,String url,int statusCode,long responseTime,String headers,String body){
         Authentication auth=SecurityContextHolder.getContext().getAuthentication();
-        String email= SecurityContextHolder.getContext().getAuthentication().getName();
+        String email= (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user=userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found: " + email));
         RequestHistory requestHistory=new RequestHistory();
         requestHistory.setMethod(method);
@@ -40,14 +40,14 @@ public class HistoryService {
     }
 
     public List<RequestHistory> getAllHistory(){
-        String email=SecurityContextHolder.getContext().getAuthentication().getName();
+        String email=(String)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user=userRepository.findByEmail(email).orElseThrow(()->new RuntimeException("User not found"));
         return repository.findByUserOrderByCreatedAtDesc(user);
           }
 
     public List<RequestHistory> getAllHistory(String url){
 
-        String email=SecurityContextHolder.getContext().getAuthentication().getName();
+        String email=(String)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user=userRepository.findByEmail(email).orElseThrow(()->new RuntimeException("User not found"));
         return repository.findByUserAndUrl(user,url);
     }

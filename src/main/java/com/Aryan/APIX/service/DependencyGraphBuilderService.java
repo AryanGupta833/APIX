@@ -67,7 +67,12 @@ public class DependencyGraphBuilderService {
     private String extractService(String url){
         try{
             URI uri=new URI(url);
-            return uri.getHost();
+            String host=uri.getHost();
+
+            if(host==null||host.isEmpty()){
+                return "unknown";
+            }
+            return host;
         }
         catch (Exception e){
             return "unknown-service";

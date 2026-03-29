@@ -1,6 +1,7 @@
 package com.Aryan.APIX.controller;
 
 import com.Aryan.APIX.model.ApiEndPoint;
+import com.Aryan.APIX.model.OpenApiResponse;
 import com.Aryan.APIX.service.OpenApiImportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,7 +19,7 @@ public class OpenApiController {
     private OpenApiImportService openApiImportService;
 
     @PostMapping("/import")
-    public List<ApiEndPoint> importSpec(@RequestBody String spec){
+    public OpenApiResponse importSpec(@RequestBody String spec){
         return openApiImportService.parse(spec);
     }
 }
