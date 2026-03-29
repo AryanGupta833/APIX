@@ -25,7 +25,17 @@ public class HistoryService {
 
     public void savedHistory(String method,String url,int statusCode,long responseTime,String headers,String body){
         Authentication auth=SecurityContextHolder.getContext().getAuthentication();
-        String email= (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Object principal=SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email;
+        if(principal instanceof String){
+            email=(String) principal;
+        }
+        else if(principal instanceof org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser oidcUser){
+            email=oidcUser.getEmail();
+        }
+        else{
+            throw new RuntimeException("Unsupported principal type: "+principal.getClass());
+        }
         User user=userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found: " + email));
         RequestHistory requestHistory=new RequestHistory();
         requestHistory.setMethod(method);

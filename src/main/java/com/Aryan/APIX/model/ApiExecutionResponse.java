@@ -29,5 +29,6 @@ public class ApiExecutionResponse {
     private DependencyGraph dependencyGraph;
 
     private TraceTimeline traceTimeline;
+    private String traceId;
 
 }

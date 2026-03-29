@@ -7,7 +7,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import tools.jackson.databind.ObjectMapper;
-
+import io.opentelemetry.api.trace.Span;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -174,6 +174,12 @@ public class RequestExecutionService {
         trace.setDownloadTime(bodyParsed.get() - responseReceived.get());
 
         ApiExecutionResponse response = new ApiExecutionResponse();
+
+        Span currentSpan=Span.current();
+        String traceId=currentSpan.getSpanContext().getTraceId();
+        response.setTraceId(traceId);
+
+        System.out.println("Trace id: " + traceId);
 
         FlowTrace flowTrace = flowAnalyzerService.analyze(trace);
 

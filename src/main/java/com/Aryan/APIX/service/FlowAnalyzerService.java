@@ -18,9 +18,14 @@ public class FlowAnalyzerService {
         flow.setResponseTransferTime(transferTime);
         flow.setTotalTime(trace.getTotalTime());
 
-        flow.setDnsTime(5);
-        flow.setTcpConnectTime(10);
-        flow.setTlsHandshakeTime(15);
+        long newtowrkTime=flow.getTotalTime()-(serverTime+transferTime);
+        if(newtowrkTime<0)newtowrkTime=0;
+        long dns=newtowrkTime/3;
+        long tcp=newtowrkTime/3;
+        long tls=newtowrkTime-dns-tcp;
+        flow.setDnsTime(dns);
+        flow.setTcpConnectTime(tcp);
+        flow.setTlsHandshakeTime(tls);
 
         return  flow;
     }
