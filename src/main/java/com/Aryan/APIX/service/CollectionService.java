@@ -25,7 +25,17 @@ public class CollectionService {
     private UserRepository userRepository;
 
     public Collection createCollection(String name){
-        String email=(String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Object principal=SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email;
+        if(principal instanceof String){
+            email=(String) principal;
+        }
+        else if(principal instanceof org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser oidcUser){
+            email=oidcUser.getEmail();
+        }
+        else{
+            throw new RuntimeException("Unsupported principal type: "+principal.getClass());
+        }
         User user=userRepository.findByEmail(email).orElseThrow();
         Collection collection=new Collection();
         collection.setName(name);
@@ -35,8 +45,17 @@ public class CollectionService {
 
     public List<Collection> getCollection(){
         System.out.println("Current user"+SecurityContextHolder.getContext().getAuthentication().getName());
-        String email= SecurityContextHolder.getContext().getAuthentication().getName();
-
+        Object principal=SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email;
+        if(principal instanceof String){
+            email=(String) principal;
+        }
+        else if(principal instanceof org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser oidcUser){
+            email=oidcUser.getEmail();
+        }
+        else{
+            throw new RuntimeException("Unsupported principal type: "+principal.getClass());
+        }
         return collectionRepository.findByUser_Email(email);
     }
     public CollectionRequest saveRequest(CollectionRequest request){

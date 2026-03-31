@@ -50,14 +50,34 @@ public class HistoryService {
     }
 
     public List<RequestHistory> getAllHistory(){
-        String email=(String)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Object principal=SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email;
+        if(principal instanceof String){
+            email=(String) principal;
+        }
+        else if(principal instanceof org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser oidcUser){
+            email=oidcUser.getEmail();
+        }
+        else{
+            throw new RuntimeException("Unsupported principal type: "+principal.getClass());
+        }
         User user=userRepository.findByEmail(email).orElseThrow(()->new RuntimeException("User not found"));
         return repository.findByUserOrderByCreatedAtDesc(user);
           }
 
     public List<RequestHistory> getAllHistory(String url){
 
-        String email=(String)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Object principal=SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email;
+        if(principal instanceof String){
+            email=(String) principal;
+        }
+        else if(principal instanceof org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser oidcUser){
+            email=oidcUser.getEmail();
+        }
+        else{
+            throw new RuntimeException("Unsupported principal type: "+principal.getClass());
+        }
         User user=userRepository.findByEmail(email).orElseThrow(()->new RuntimeException("User not found"));
         return repository.findByUserAndUrl(user,url);
     }
