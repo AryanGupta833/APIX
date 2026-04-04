@@ -223,6 +223,8 @@ public class RequestExecutionService {
         ApiExecutionResponse response = new ApiExecutionResponse();
 
         String traceId = parentSpan.getSpanContext().getTraceId();
+        String jeagerUrl="https://all-in-one-production-a9d1.up.railway.app/trace/" + traceId;
+        response.setTraceUrl(jeagerUrl);
         response.setTraceId(traceId);
 
         FlowTrace flowTrace = flowAnalyzerService.analyze(trace);

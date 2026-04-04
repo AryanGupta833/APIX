@@ -30,5 +30,6 @@ public class ApiExecutionResponse {
 
     private TraceTimeline traceTimeline;
     private String traceId;
+    private String traceUrl;
 
 }
