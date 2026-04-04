@@ -47,6 +47,6 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
 
         String token= jwtUtil.generateToken(user.getEmail());
 
-        response.sendRedirect("https://friendly-frontend-helper.vercel.app/oauth-success?token=" + token);
+        response.sendRedirect("https://apix-xray.vercel.app/oauth-success?token=" + token);
     }
 }
