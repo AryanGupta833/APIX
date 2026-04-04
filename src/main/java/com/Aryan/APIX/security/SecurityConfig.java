@@ -43,8 +43,9 @@ public class SecurityConfig {
                             res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                         })
                 )
-                .oauth2Login(oauth->oauth.successHandler(successHandler))
-                .addFilterBefore(jwtFilter,UsernamePasswordAuthenticationFilter.class);
+                .oauth2Login(oauth -> oauth
+                        .defaultSuccessUrl("https://friendly-frontend-helper.vercel.app/oauth-success", true)
+                )                .addFilterBefore(jwtFilter,UsernamePasswordAuthenticationFilter.class);
         return http.build();}
 
     @Bean
@@ -52,7 +53,7 @@ public class SecurityConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of("http://localhost:8081"));
+        configuration.setAllowedOrigins(List.of("https://friendly-frontend-helper.vercel.app","http://localhost:8081"));
         configuration.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
