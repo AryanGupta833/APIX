@@ -2,12 +2,14 @@ package com.Aryan.APIX.service;
 
 import com.Aryan.APIX.entity.RequestHistory;
 import com.Aryan.APIX.model.*;
+import io.opentelemetry.api.trace.*;
+import io.opentelemetry.context.Scope;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import tools.jackson.databind.ObjectMapper;
-import io.opentelemetry.api.trace.Span;
+
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -44,6 +46,8 @@ public class RequestExecutionService {
     @Autowired
     private FlowAnalyzerService flowAnalyzerService;
 
+    @Autowired
+    private Tracer tracer;
 
     public ApiExecutionResponse execute(ApiRequest apiRequest){
 
@@ -67,10 +71,9 @@ public class RequestExecutionService {
         return response;
     }
 
-
     private ApiExecutionResponse executeSingle(ApiRequest apiRequest){
 
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
 
         ApiResponse apiResponse;
         AtomicLong responseReceived = new AtomicLong();
@@ -78,108 +81,149 @@ public class RequestExecutionService {
 
         XRayAnalysis xray;
 
-        try {
+        long connStart=0,connEnd=0;
+        long execStart=0,execEnd=0;
 
-            WebClient.RequestBodySpec requestSpec = webClient
-                    .method(HttpMethod.valueOf(apiRequest.getMethod()))
-                    .uri(apiRequest.getUrl())
-                    .headers(headers -> {
+        Span parentSpan = tracer.spanBuilder("API Request").startSpan();
 
-                        headers.set("User-Agent", "APIX");
+        try (Scope scope = parentSpan.makeCurrent()) {
 
-                        Map<String, String> reqHeaders = apiRequest.getHeaders();
+            try {
 
-                        if(reqHeaders != null){
-                            reqHeaders.forEach((key,value)->{
-                                String cleanKey = key.trim().replace(":","");
-                                headers.set(cleanKey,value);
-                            });
-                        }
-                    });
+                Span connectionSpan = tracer.spanBuilder("Connection Phase").startSpan();
+                connStart = System.nanoTime();
 
-            WebClient.ResponseSpec responseSpec;
+                WebClient.RequestBodySpec requestSpec = webClient
+                        .method(HttpMethod.valueOf(apiRequest.getMethod()))
+                        .uri(apiRequest.getUrl())
+                        .headers(headers -> {
 
-            if(apiRequest.getBody() != null &&
-                    !apiRequest.getBody().isEmpty() &&
-                    !apiRequest.getMethod().equalsIgnoreCase("GET")){
+                            headers.set("User-Agent", "APIX");
 
-                responseSpec = requestSpec
-                        .bodyValue(apiRequest.getBody())
-                        .retrieve();
+                            Map<String, String> reqHeaders = apiRequest.getHeaders();
 
-            } else {
+                            if(reqHeaders != null){
+                                reqHeaders.forEach((key,value)->{
+                                    String cleanKey = key.trim().replace(":","");
+                                    headers.set(cleanKey,value);
+                                });
+                            }
+                        });
 
-                responseSpec = requestSpec.retrieve();
+                connEnd = System.nanoTime();
+                connectionSpan.end();
+
+
+                Span executionSpan = tracer.spanBuilder("Execution Phase").startSpan();
+                execStart = System.nanoTime();
+
+                WebClient.ResponseSpec responseSpec;
+
+                if(apiRequest.getBody() != null &&
+                        !apiRequest.getBody().isEmpty() &&
+                        !apiRequest.getMethod().equalsIgnoreCase("GET")){
+
+                    responseSpec = requestSpec
+                            .bodyValue(apiRequest.getBody())
+                            .retrieve();
+
+                } else {
+                    responseSpec = requestSpec.retrieve();
+                }
+
+                apiResponse = responseSpec
+                        .toEntity(String.class)
+                        .map(entity -> {
+
+                            ApiResponse response = new ApiResponse();
+
+
+                            responseReceived.set(System.nanoTime());
+
+                            response.setStatusCode(entity.getStatusCode().value());
+                            response.setBody(entity.getBody());
+
+                            Map<String,String> headersMap = new HashMap<>();
+
+                            entity.getHeaders()
+                                    .forEach((key,value)-> headersMap.put(key,value.get(0)));
+
+                            response.setHeaders(headersMap);
+
+
+                            bodyParsed.set(System.nanoTime());
+
+                            return response;
+
+                        })
+                        .block();
+
+                execEnd = System.nanoTime();
+
+                executionSpan.setAttribute("http.status_code", apiResponse.getStatusCode());
+                executionSpan.end();
+
+                xray = xRayService.analysis(apiResponse.getStatusCode());
+
+            }
+            catch(Exception e){
+
+                apiResponse = new ApiResponse();
+
+                int status = 500;
+                if(e instanceof org.springframework.web.reactive.function.client.WebClientResponseException ex){
+                    status = ex.getStatusCode().value();
+                }
+
+                apiResponse.setStatusCode(status);
+                apiResponse.setBody("APIX Error: " + e.getMessage());
+
+                parentSpan.recordException(e);
+                parentSpan.setStatus(StatusCode.ERROR);
+
+                xray = xRayService.analyzeException(e);
             }
 
-
-
-
-            apiResponse = responseSpec
-                    .toEntity(String.class)
-                    .map(entity -> {
-
-
-                        ApiResponse response = new ApiResponse();
-
-                        responseReceived.set(System.currentTimeMillis());
-
-                        response.setStatusCode(entity.getStatusCode().value());
-                        response.setBody(entity.getBody());
-
-                        Map<String,String> headersMap = new HashMap<>();
-
-                        entity.getHeaders()
-                                .forEach((key,value)-> headersMap.put(key,value.get(0)));
-
-                        response.setHeaders(headersMap);
-
-                        bodyParsed.set(System.currentTimeMillis());
-
-                        return response;
-
-                    })
-                    .block();
-
-            xray = xRayService.analysis(apiResponse.getStatusCode());
-
-        }
-        catch(Exception e){
-
-            apiResponse = new ApiResponse();
-            int status=500;
-            if(e instanceof  org.springframework.web.reactive.function.client.WebClientResponseException ex){
-                status=ex.getStatusCode().value();
-            }
-            apiResponse.setStatusCode(status);
-            apiResponse.setBody("APIX Error: "+e.getMessage());
-
-            xray = xRayService.analyzeException(e);
+        } finally {
+            parentSpan.end();
         }
 
-        long end = System.currentTimeMillis();
+        long end = System.nanoTime();
 
-        apiResponse.setResponseTime(end-start);
+
+        long totalTimeMs = (end - start) / 1000000;
+        apiResponse.setResponseTime(totalTimeMs);
+
+        long connectionTime = (connEnd - connStart) / 1000000;
+        long executionTime = (responseReceived.get() - execStart) / 1000000;
+        long responseTime = (bodyParsed.get() - responseReceived.get()) / 1000000;
+
+
+        if(connectionTime <= 0) connectionTime = 1;
+        if(executionTime <= 0) executionTime = 1;
+        if(responseTime <= 0) responseTime = 1;
 
         ErrorAnalysis analysis =
                 errorAnalysisService.analysis(apiResponse.getStatusCode());
 
-        TimingTrace trace = new TimingTrace();
-        trace.setRequestStart(start);
-        trace.setResponseReceived(responseReceived.get());
-        trace.setBodyParsed(bodyParsed.get());
-        trace.setTotalTime(end-start);
 
-        trace.setServerProcessingTime(responseReceived.get() -start);
-        trace.setDownloadTime(bodyParsed.get() - responseReceived.get());
+        TimingTrace trace = new TimingTrace();
+        trace.setRequestStart(start / 1000000);
+        trace.setResponseReceived(responseReceived.get() / 1000000);
+        trace.setBodyParsed(bodyParsed.get() / 1000000);
+        trace.setTotalTime(totalTimeMs);
+
+        trace.setServerProcessingTime(
+                (responseReceived.get() - start) / 1000000
+        );
+        trace.setDownloadTime(
+                (bodyParsed.get() - responseReceived.get()) / 1000000
+        );
 
         ApiExecutionResponse response = new ApiExecutionResponse();
 
-        Span currentSpan=Span.current();
-        String traceId=currentSpan.getSpanContext().getTraceId();
+        String traceId = parentSpan.getSpanContext().getTraceId();
         response.setTraceId(traceId);
-
-        System.out.println("Trace id: " + traceId);
 
         FlowTrace flowTrace = flowAnalyzerService.analyze(trace);
 
@@ -189,10 +233,19 @@ public class RequestExecutionService {
         response.setTimingTrace(trace);
         response.setFlowTrace(flowTrace);
 
+
+        Map<String,Long> timings = new HashMap<>();
+        timings.put("connection", connectionTime);
+        timings.put("execution", executionTime);
+        timings.put("response", responseTime);
+
+        apiResponse.setTimings(timings);
+
         FlowGraph graph = flowGraphBuilderService.build(flowTrace);
         response.setFlowGraph(graph);
-        List<RequestHistory> hisory=historyService.getAllHistory();
-        DependencyGraph deps=dependencyGraphBuilderService.build(hisory);
+
+        List<RequestHistory> history = historyService.getAllHistory();
+        DependencyGraph deps = dependencyGraphBuilderService.build(history);
         response.setDependencyGraph(deps);
 
         String headersJson="{}";
@@ -211,17 +264,16 @@ public class RequestExecutionService {
                 apiRequest.getBody()
         );
 
-        List<RequestHistory> history =
+        List<RequestHistory> historyByUrl =
                 historyService.getAllHistory(apiRequest.getUrl());
 
         TraceTimeline timeline =
-                traceTimelineService.build(history);
+                traceTimelineService.build(historyByUrl);
 
         response.setTraceTimeline(timeline);
 
         return response;
     }
-
 
     private ApiExecutionResponse analyzeDiagnostic(List<ApiExecutionResponse> attempts, String url){
 
@@ -236,19 +288,14 @@ public class RequestExecutionService {
         ApiExecutionResponse finalResult = attempts.get(0);
 
         if(success == 0){
-
             finalResult.getXRayAnalysis()
                     .setSuggestion("Persistent failure across retries. Backend likely unstable.");
-
         }
         else if(success < attempts.size()){
-
             finalResult.getXRayAnalysis()
                     .setSuggestion("Intermittent API instability detected.");
-
         }
         else{
-
             finalResult.getXRayAnalysis()
                     .setSuggestion("API recovered after retry.");
         }

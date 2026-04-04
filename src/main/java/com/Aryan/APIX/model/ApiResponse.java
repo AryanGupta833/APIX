@@ -16,4 +16,5 @@ public class ApiResponse {
     private Map<String,String> headers;
     private String body;
     private long responseTime;
+    private Map<String,Long> timings;
 }

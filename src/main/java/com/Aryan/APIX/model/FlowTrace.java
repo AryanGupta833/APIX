@@ -6,11 +6,9 @@ import lombok.Setter;
 @Setter
 public class FlowTrace {
 
-    private long dnsTime;
-    private long tcpConnectTime;
-    private long tlsHandshakeTime;
-    private long serverProcessingTime;
-    private long responseTransferTime;
+    private long connectionTime;
+    private long executionTime;
+    private long responseTime;
     private long totalTime;
 
 }
