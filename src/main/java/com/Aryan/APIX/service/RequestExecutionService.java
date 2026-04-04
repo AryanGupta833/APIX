@@ -46,8 +46,8 @@ public class RequestExecutionService {
     @Autowired
     private FlowAnalyzerService flowAnalyzerService;
 
-    @Autowired
-    private Tracer tracer;
+    private static final Tracer tracer =
+            io.opentelemetry.api.GlobalOpenTelemetry.getTracer("APIX-Tracer");
 
     public ApiExecutionResponse execute(ApiRequest apiRequest){
 
