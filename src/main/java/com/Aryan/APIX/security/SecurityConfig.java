@@ -44,8 +44,8 @@ public class SecurityConfig {
                         })
                 )
                 .oauth2Login(oauth -> oauth
-                        .defaultSuccessUrl("https://friendly-frontend-helper.vercel.app/oauth-success", true)
-                )                .addFilterBefore(jwtFilter,UsernamePasswordAuthenticationFilter.class);
+                        .successHandler(successHandler)
+                )              .addFilterBefore(jwtFilter,UsernamePasswordAuthenticationFilter.class);
         return http.build();}
 
     @Bean
