@@ -1,5 +1,8 @@
 package com.Aryan.APIX.service;
 
+import com.Aryan.APIX.ai.dto.AIRequest;
+import com.Aryan.APIX.ai.dto.AIResponse;
+import com.Aryan.APIX.ai.service.AIAnalysisService;
 import com.Aryan.APIX.entity.RequestHistory;
 import com.Aryan.APIX.model.*;
 import io.opentelemetry.api.trace.*;
@@ -18,6 +21,9 @@ public class RequestExecutionService {
 
     @Autowired
     private WebClient webClient;
+
+    @Autowired
+    private AIAnalysisService aiAnalysisService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -78,6 +84,7 @@ public class RequestExecutionService {
         ApiResponse apiResponse;
         AtomicLong responseReceived = new AtomicLong();
         AtomicLong bodyParsed = new AtomicLong();
+        AIResponse aiAnalysis=null;
 
         XRayAnalysis xray;
 
@@ -165,6 +172,19 @@ public class RequestExecutionService {
 
                 xray = xRayService.analysis(apiResponse.getStatusCode());
 
+                if(apiResponse.getStatusCode()>=400){
+                    AIRequest aiRequest=new AIRequest();
+
+                    aiRequest.setRequestUrl(apiRequest.getUrl());
+                    aiRequest.setMethod(apiRequest.getMethod());
+                    aiRequest.setStatusCode(apiResponse.getStatusCode());
+                    aiRequest.setResponseBody(apiResponse.getBody());
+                    aiRequest.setTrace(xray.getSuggestion());
+                    aiRequest.setLatency((long)((System.nanoTime() - start) / 1000000));
+
+                    aiAnalysis=aiAnalysisService.analyzeFailure(aiRequest);
+                }
+
             }
             catch(Exception e){
 
@@ -182,6 +202,16 @@ public class RequestExecutionService {
                 parentSpan.setStatus(StatusCode.ERROR);
 
                 xray = xRayService.analyzeException(e);
+                AIRequest aiRequest = new AIRequest();
+
+                aiRequest.setRequestUrl(apiRequest.getUrl());
+                aiRequest.setMethod(apiRequest.getMethod());
+                aiRequest.setStatusCode(status);
+                aiRequest.setResponseBody(apiResponse.getBody());
+                aiRequest.setTrace(e.getMessage());
+                aiRequest.setLatency((long)((System.nanoTime() - start) / 1000000));
+
+                aiAnalysis = aiAnalysisService.analyzeFailure(aiRequest);
             }
 
         } finally {
@@ -274,6 +304,7 @@ public class RequestExecutionService {
 
         response.setTraceTimeline(timeline);
 
+        response.setAiAnalysis(aiAnalysis);
         return response;
     }
 

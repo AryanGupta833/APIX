@@ -1,5 +1,6 @@
 package com.Aryan.APIX.model;
 
+import com.Aryan.APIX.ai.dto.AIResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,5 +32,6 @@ public class ApiExecutionResponse {
     private TraceTimeline traceTimeline;
     private String traceId;
     private String traceUrl;
+    private AIResponse aiAnalysis;
 
 }
