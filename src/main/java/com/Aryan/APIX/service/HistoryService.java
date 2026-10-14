@@ -24,6 +24,10 @@ public class HistoryService {
 
 
     public void savedHistory(String method,String url,int statusCode,long responseTime,String headers,String body){
+        savedHistory(method, url, statusCode, responseTime, headers, body, null, null);
+    }
+
+    public void savedHistory(String method,String url,int statusCode,long responseTime,String headers,String body, String executionId, String traceId){
         Authentication auth=SecurityContextHolder.getContext().getAuthentication();
         Object principal=SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String email;
@@ -44,6 +48,8 @@ public class HistoryService {
         requestHistory.setResponseTime(responseTime);
         requestHistory.setHeaders(headers);
         requestHistory.setBody(body);
+        requestHistory.setExecutionId(executionId);
+        requestHistory.setTraceId(traceId);
         requestHistory.setCreatedAt(LocalDateTime.now());
         requestHistory.setUser(user);
         repository.save(requestHistory);

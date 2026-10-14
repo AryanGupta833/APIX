@@ -65,8 +65,6 @@ public class OpenAPIProvider implements AIProvider {
                     .bodyToMono(String.class)
                     .block();
 
-            System.out.println(response);
-
             return parseResponse(response);
 
         } catch (Exception e) {
@@ -75,7 +73,7 @@ public class OpenAPIProvider implements AIProvider {
 
             error.setFailureType("AI_ANALYSIS_FAILED");
             error.setLayer("AI_LAYER");
-            error.setReason(e.getMessage());
+            error.setReason("The configured AI provider request failed");
             error.setFixes(List.of("Check AI provider configuration"));
             error.setConfidence(0.0);
 

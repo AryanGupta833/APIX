@@ -15,7 +15,7 @@ public class CorsConfig  {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("https://apix-xray.vercel.app")
+                        .allowedOrigins("https://apix-xray.vercel.app", "http://localhost:5174", "http://localhost:8080")
                         .allowedMethods("*")
                         .allowedHeaders("*")
                         .allowCredentials(true);

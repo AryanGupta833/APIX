@@ -7,10 +7,12 @@ import lombok.Setter;
 @Setter
 public class TimingTrace {
     private long requestStart;
-    private long responseReceived;
-    private long bodyParsed;
+    private Long responseReceived;
+    private Long bodyParsed;
     private long totalTime;
-    private long serverProcessingTime;
-    private long downloadTime;
+    private Long serverProcessingTime;
+    private Long downloadTime;
+    private Long connectionTime;
+    private Long executionTime;
 
 }

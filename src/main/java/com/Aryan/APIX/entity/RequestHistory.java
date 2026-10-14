@@ -31,6 +31,12 @@ public class RequestHistory {
     private int statusCode;
     private long responseTime;
 
+    @Column(length = 36)
+    private String executionId;
+
+    @Column(length = 32)
+    private String traceId;
+
     @Lob
     @Column(columnDefinition = "TEXT")
     private String headers;

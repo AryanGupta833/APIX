@@ -36,6 +36,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/", "/oauth2/**","/login/**","/error").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/apix/agents/pair").permitAll()
+                        .requestMatchers("/apix/agents/channel/**").permitAll()
                         .requestMatchers("/apix/**").authenticated()
                         .anyRequest().permitAll())
                 .exceptionHandling(ex -> ex
@@ -53,7 +55,7 @@ public class SecurityConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of("https://friendly-frontend-helper.vercel.app","http://localhost:8081","https://apix-xray.vercel.app"));
+        configuration.setAllowedOrigins(List.of("https://friendly-frontend-helper.vercel.app","http://localhost:5174","http://localhost:8080","http://localhost:8081","https://apix-xray.vercel.app"));
         configuration.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

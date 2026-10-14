@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -26,6 +27,9 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Value("${apix.oauth.frontend-success-url:https://apix-xray.vercel.app/oauth-success}")
+    private String frontendSuccessUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -47,6 +51,6 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
 
         String token= jwtUtil.generateToken(user.getEmail());
 
-        response.sendRedirect("https://apix-xray.vercel.app/oauth-success?token=" + token);
+        response.sendRedirect(frontendSuccessUrl + "?token=" + java.net.URLEncoder.encode(token, java.nio.charset.StandardCharsets.UTF_8));
     }
 }
