@@ -196,10 +196,6 @@ The Dockerfile builds and runs the backend application, but it does not by itsel
 - The full persistence migration path, Windows WebSocket loopback integration, frontend production build, and all deployment configurations are not certified by this README. See [`IMPLEMENTATION_PROGRESS.md`](IMPLEMENTATION_PROGRESS.md) for the latest verified checks and known environment blockers.
 - GraphQL/gRPC testing, team workspaces, CI runners, a mock server, and AI-generated test authoring are not documented as implemented features.
 
-## License
-
-The README's former MIT badge was not backed by a license file in this repository. Add a `LICENSE` file before representing this project as MIT-licensed. Until then, standard copyright restrictions apply.
-
 ## Author
 
 **Aryan Gupta** · [GitHub](https://github.com/AryanGupta833) · [LinkedIn](https://linkedin.com/in/aryan-gupta-316a35366)
